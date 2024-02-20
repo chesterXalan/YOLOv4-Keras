@@ -1,20 +1,17 @@
 """YOLO_v4 Model Defined in Keras."""
 
-from functools import wraps
-
 import math
 import numpy as np
-import tensorflow as tf
-import keras
-from keras import backend as K
-from keras.engine.base_layer import Layer
-from keras.layers import Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D
-from keras.layers.advanced_activations import LeakyReLU
-from keras.layers.normalization import BatchNormalization
-from keras.models import Model
-from keras.regularizers import l2
+from functools import wraps
 
-from yolo4.utils import compose
+import tensorflow as tf
+for devices in tf.config.list_physical_devices('GPU'):
+    tf.config.experimental.set_memory_growth(devices, True)
+import tensorflow.keras as keras
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Layer, Conv2D, Add, ZeroPadding2D, UpSampling2D, Concatenate, MaxPooling2D, LeakyReLU, BatchNormalization
+from tensorflow.keras.models import Model
+from yolov4.utils import compose
 
 class Mish(Layer):
     '''
@@ -44,7 +41,6 @@ class Mish(Layer):
 
     def compute_output_shape(self, input_shape):
         return input_shape
-
 
 @wraps(Conv2D)
 def DarknetConv2D(*args, **kwargs):
@@ -113,7 +109,7 @@ def make_last_layers(x, num_filters, out_filters):
     return x, y
 
 
-def yolo4_body(inputs, num_anchors, num_classes):
+def yolov4_body(inputs, num_anchors, num_classes):
     """Create YOLO_V4 model CNN body in Keras."""
     darknet = Model(inputs, darknet_body(inputs))
 
@@ -532,6 +528,6 @@ def yolo_loss(args, num_classes, iou_loss_thresh, anchors):
 
     loss = ciou_loss + conf_loss + prob_loss
 
-    loss = tf.Print(loss, [loss, ciou_loss, conf_loss, prob_loss], message='loss: ')
+    loss = tf.print(loss, [loss, ciou_loss, conf_loss, prob_loss], message='loss: ')
 
     return loss

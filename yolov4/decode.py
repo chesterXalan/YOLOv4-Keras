@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
+import os
+import cv2
+import numpy as np
 import random
 import colorsys
-import cv2
 import threading
-import os
-import numpy as np
-
 
 class Decode(object):
     def __init__(self, obj_threshold, nms_threshold, input_shape, _yolo, all_classes):
@@ -16,7 +15,7 @@ class Decode(object):
         self.num_classes = len(self.all_classes)
         self._yolo = _yolo
 
-    # 处理一张图片
+    # 處理單張圖片
     def detect_image(self, image, draw_image):
         pimage = self.process_image(np.copy(image))
 
@@ -25,7 +24,7 @@ class Decode(object):
             self.draw(image, boxes, scores, classes)
         return image, boxes, scores, classes
 
-    # 多线程后处理
+    # 多執行緒處理
     def multi_thread_post(self, batch_img, outs, i, draw_image, result_image, result_boxes, result_scores, result_classes):
         a1 = np.reshape(outs[0][i], (1, self.input_shape[0] // 32, self.input_shape[1] // 32, 3, 5 + self.num_classes))
         a2 = np.reshape(outs[1][i], (1, self.input_shape[0] // 16, self.input_shape[1] // 16, 3, 5 + self.num_classes))
@@ -38,7 +37,7 @@ class Decode(object):
         result_scores[i] = scores
         result_classes[i] = classes
 
-    # 处理一批图片
+    # 處理多張圖片
     def detect_batch(self, batch_img, draw_image):
         batch_size = len(batch_img)
         result_image, result_boxes, result_scores, result_classes = [None] * batch_size, [None] * batch_size, [None] * batch_size, [None] * batch_size
@@ -50,19 +49,19 @@ class Decode(object):
         batch = np.concatenate(batch, axis=0)
         outs = self._yolo.predict(batch)
 
-        # 多线程
+        # 多執行緒
         threads = []
         for i in range(batch_size):
             t = threading.Thread(target=self.multi_thread_post, args=(
                 batch_img, outs, i, draw_image, result_image, result_boxes, result_scores, result_classes))
             threads.append(t)
             t.start()
-        # 等待所有线程任务结束。
+        # 等待所有執行緒結束
         for t in threads:
             t.join()
         return result_image, result_boxes, result_scores, result_classes
 
-    # 处理视频
+    # 處理影片
     def detect_video(self, video):
         video_path = os.path.join("videos", "test", video)
         camera = cv2.VideoCapture(video_path)
@@ -78,7 +77,6 @@ class Decode(object):
 
         while True:
             res, frame = camera.read()
-
             if not res:
                 break
 
@@ -96,7 +94,7 @@ class Decode(object):
 
     def draw(self, image, boxes, scores, classes):
         image_h, image_w, _ = image.shape
-        # 定义颜色
+        # 定義顏色
         hsv_tuples = [(1.0 * x / self.num_classes, 1., 1.) for x in range(self.num_classes)]
         colors = list(map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples))
         colors = list(map(lambda x: (int(x[0] * 255), int(x[1] * 255), int(x[2] * 255)), colors))
@@ -134,14 +132,13 @@ class Decode(object):
     def predict(self, image, shape):
         outs = self._yolo.predict(image)
 
-        # numpy后处理
+        # numpy後處理
         a1 = np.reshape(outs[0], (1, self.input_shape[0]//32, self.input_shape[1]//32, 3, 5+self.num_classes))
         a2 = np.reshape(outs[1], (1, self.input_shape[0]//16, self.input_shape[1]//16, 3, 5+self.num_classes))
         a3 = np.reshape(outs[2], (1, self.input_shape[0]//8, self.input_shape[1]//8, 3, 5+self.num_classes))
         boxes, scores, classes = self._yolo_out([a1, a2, a3], shape)
 
         return boxes, scores, classes
-
 
     def _sigmoid(self, x):
         return 1 / (1 + np.exp(-x))
@@ -172,7 +169,7 @@ class Decode(object):
         box_xy += grid
         box_xy /= (grid_w, grid_h)
         box_wh /= self.input_shape
-        box_xy -= (box_wh / 2.)   # 坐标格式是左上角xy加矩形宽高wh，xywh都除以图片边长归一化了。
+        box_xy -= (box_wh / 2.)   # 座標格式是左上角xy與矩形寬高wh，皆除以圖片寬高做正規化。
         boxes = np.concatenate((box_xy, box_wh), axis=-1)
 
         return boxes, box_confidence, box_class_probs
@@ -220,7 +217,6 @@ class Decode(object):
 
         return keep
 
-
     def _yolo_out(self, outs, shape):
         masks = [[6, 7, 8], [3, 4, 5], [0, 1, 2]]
         anchors = [[12, 16], [19, 36], [40, 28], [36, 75], [76, 55],
@@ -239,7 +235,6 @@ class Decode(object):
         classes = np.concatenate(classes)
         scores = np.concatenate(scores)
 
-        # boxes坐标格式是左上角xy加矩形宽高wh，xywh都除以图片边长归一化了。
         # Scale boxes back to original image shape.
         w, h = shape[1], shape[0]
         image_dims = [w, h, w, h]
@@ -265,9 +260,6 @@ class Decode(object):
         classes = np.concatenate(nclasses)
         scores = np.concatenate(nscores)
 
-        # 换坐标
         boxes[:, [2, 3]] = boxes[:, [0, 1]] + boxes[:, [2, 3]]
 
         return boxes, scores, classes
-
-

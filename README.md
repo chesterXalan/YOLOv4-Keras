@@ -1,10 +1,9 @@
-# keras-yolo4
+## The following content is provided by the original author.
+
+# YOLOv4-Keras
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](LICENSE)
 
-# 请使用更完善的版本:
-
-# [https://github.com/miemie2013/Keras-YOLOv4](https://github.com/miemie2013/Keras-YOLOv4)
 
 # Please visit here for more complete model:
 
